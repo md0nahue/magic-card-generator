@@ -68,113 +68,51 @@
 </head>
 
 <body>
-
   <h1>Magic: The Gathering Card Generator</h1>
 
-  <!-- Input fields for card customization -->
   <label>Color: <input type="text" id="color" placeholder="e.g., blue"></label><br>
   <label>Type: <input type="text" id="type" placeholder="e.g., wizard"></label><br>
   <label>Effect: <input type="text" id="effect" placeholder="e.g., casts illusions"></label><br>
 
-  <!-- Button to generate the card -->
-  <button onclick="createMagicCard()">Generate Card</button>
+  <button onclick="requestMagicCard()">Generate Card</button>
 
-  <!-- Card display -->
   <div id="card-container"></div>
 
   <script>
-    // Card Generator Logic
-    function generateCardText(color, type, effect) {
-      const adjectives = ['mystical', 'ancient', 'powerful', 'enigmatic', 'arcane'];
-      const verbs = ['controls', 'manipulates', 'unleashes', 'summons', 'conjures'];
-      const phrases = [
-        'with a touch of magic',
-        'from the depths of the unknown',
-        'that bends reality',
-        'with unparalleled might',
-        'that defies logic'
-      ];
-
-      const randomAdjective = adjectives[Math.floor(Math.random() * adjectives.length)];
-      const randomVerb = verbs[Math.floor(Math.random() * verbs.length)];
-      const randomPhrase = phrases[Math.floor(Math.random() * phrases.length)];
-
-      const name = `${color.charAt(0).toUpperCase() + color.slice(1)} ${type}`;
-      const text = `This ${randomAdjective} ${color} ${type} ${randomVerb} ${effect} ${randomPhrase}.`;
-      const flavorText = `A ${randomAdjective} ${color} force that ${randomVerb} ${randomPhrase}.`;
-
-      return { name, type, text, flavorText };
-    }
-
-    // Function to generate an image using OpenAI's DALL·E
-    async function generateCardImage(cardText) {
-
-      try {
-        const response = await fetch('/generate-card', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            model: 'dall-e-3',
-            prompt: 'woof',
-            n: 1,
-            size: '1024x1024'
-          })
-        });
-
-          console.log(response)
-        if (!response.ok) {
-          throw new Error('Image generation failed');
-        }
-
-        const data = await response.json();
-        return data.data[0].url; // Return the generated image URL
-
-      } catch (error) {
-        console.log(error)
-        console.error('Error generating image:', error);
-        return 'https://via.placeholder.com/1024?text=Image+Unavailable';
-      }
-    }
-
-    // Main function to create a card
-    async function createMagicCard() {
+    async function requestMagicCard() {
       const color = document.getElementById('color').value || 'blue';
       const type = document.getElementById('type').value || 'wizard';
       const effect = document.getElementById('effect').value || 'casts illusions';
 
-      // Generate card text
-      const card = generateCardText(color, type, effect);
-
-      // Display placeholder while image loads
       const cardContainer = document.getElementById('card-container');
-      cardContainer.innerHTML = `
-        <div class="card">
-          <div class="card-content">
-            <div class="card-name">${card.name}</div>
-            <div class="card-type">${card.type}</div>
-            <p>Generating image...</p>
-            <div class="card-text">${card.text}<br><em>${card.flavorText}</em></div>
-          </div>
-        </div>
-      `;
+      cardContainer.innerHTML = `<p>Generating card...</p>`;
 
-      // Generate and display card image
-      const imageUrl = await generateCardImage(card);
-      cardContainer.innerHTML = `
-        <div class="card">
-          <img class="card-image" src="${imageUrl}" alt="${card.name}" />
-          <div class="card-content">
-            <div class="card-name">${card.name}</div>
-            <div class="card-type">${card.type}</div>
-            <div class="card-text">${card.text}<br><em>${card.flavorText}</em></div>
+      try {
+        const response = await fetch('/generate-card', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ color, type, effect })
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to generate card');
+        }
+
+        const card = await response.json();
+
+        cardContainer.innerHTML = `
+          <div class="card">
+            <img class="card-image" src="${card.imageUrl}" alt="${card.name}" />
+            <div class="card-content">
+              <div class="card-name">${card.text}</div>
+            </div>
           </div>
-        </div>
-      `;
+        `;
+      } catch (error) {
+        cardContainer.innerHTML = `<p>Error generating card. Please try again.</p>`;
+      }
     }
   </script>
-
 </body>
 
 </html>

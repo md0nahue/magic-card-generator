@@ -1,4 +1,4 @@
-const User = require('./models/User');
+const User = require('./models/Card');
 
 // Function to insert a user
 async function createCard(url, filepath, text) {
