@@ -14,25 +14,34 @@ const openai = new OpenAI({
 async function generateMagicCardText(description) {
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: "gpt-4o",
       messages: [
         {
           role: "system",
-          content: "You are a Magic: The Gathering card generator. Output responses in JSON format."
+          content: "You are a Magic: The Gathering card generator. Output responses in JSON format following this schema:"
         },
         {
           role: "user",
           content: `Generate a Magic: The Gathering card with these attributes:
-          - Mana Cost
-          - Card Type
-          - Attack/Defense (if applicable)
-          - Card Text
-          - Flavor Text.
-          Description of the card: ${description}`
+          {
+            "name": "string",
+            "mana_cost": "string",
+            "card_type": "string",
+            "subtypes": "array of strings",
+            "rarity": "string",
+            "attack": "integer (if creature, optional)",
+            "defense": "integer (if creature, optional)",
+            "abilities": "array of strings",
+            "flavor_text": "string",
+            "set": "string",
+            "artist": "string"
+          }
+          The response should strictly follow the JSON schema above.`
         }
       ],
-      response_format: "json",
+      response_format: { type: "json_object" } // ✅ Correct value
     });
+
 
     return JSON.parse(response.choices[0].message.content);
   } catch (error) {
@@ -84,6 +93,24 @@ function downloadFile(url, outputPath) {
   });
 }
 
+
+// { example output from ChatGPT
+//   name: 'Eldritch Conjurer',
+//   mana_cost: '3U',
+//   card_type: 'Creature',
+//   subtypes: [ 'Human', 'Wizard' ],
+//   rarity: 'Rare',
+//   attack: 2,
+//   defense: 3,
+//   abilities: [
+//     'Whenever you cast an instant or sorcery spell, create a 1/1 blue Illusion creature token.',
+//     '1U, Sacrifice an Illusion: Draw a card.'
+//   ],
+//   flavor_text: '"From the aether, mysteries are born."',
+//   set: 'Mystical Horizons',
+//   artist: 'Anna Steinbauer'
+// }
+
 /**
  * Orchestrates text generation, image generation, file saving, and DB saving.
  */
@@ -91,10 +118,10 @@ async function generateAndSaveMagicCard(description) {
   try {
     // Step 1: Generate card text
     const cardData = await generateMagicCardText(description);
-
+    console.log(cardData)
     // Step 2: Generate card image
     const imageUrl = await generateMagicCardImage();
-
+    console.log(imageUrl)
     // Step 3: Download image
     const outputDir = path.join(__dirname, './public');
     if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
@@ -103,9 +130,12 @@ async function generateAndSaveMagicCard(description) {
     await downloadFile(imageUrl, outputPath);
 
     // Step 4: Save card to DB
-    const savedCard = await createCard(imageUrl, outputPath, cardData);
+    // console.log(cardData);
+    // const savedCard = await createCard(imageUrl, outputPath, cardData);
+    cardData['imageUrl'] = imageUrl
 
-    return savedCard;
+
+    return cardData;
   } catch (error) {
     console.error("Error generating and saving card:", error);
     throw error;
