@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <title>MTG Card Generator</title>
+  <style>
+    body {
+      font-family: 'Beleren', Arial, sans-serif;
+      text-align: center;
+      margin-top: 20px;
+      background-color: #2b2b2b;
+      color: white;
+    }
+
+    #card-container {
+      display: flex;
+      justify-content: center;
+      margin-top: 30px;
+    }
+
+    .card {
+      width: 375px;
+      height: 523px;
+      background: #e6d8c3;
+      border: 3px solid #000;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.6);
+    }
+
+    .card-image {
+      width: 100%;
+      height: 280px;
+      object-fit: cover;
+    }
+
+    .card-content {
+      padding: 8px;
+    }
+
+    .card-name {
+      font-size: 22px;
+      font-weight: bold;
+      margin: 5px 0;
+    }
+
+    .card-type {
+      font-style: italic;
+      margin: 5px 0;
+    }
+
+    .card-text {
+      font-size: 14px;
+      line-height: 1.4;
+      margin-top: 10px;
+      background: #f8f4e4;
+      color: #000;
+      padding: 8px;
+      border-radius: 8px;
+    }
+
+    input, button {
+      margin: 10px;
+      padding: 8px;
+      font-size: 16px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1>Magic: The Gathering Card Generator</h1>
+
+  <!-- Input fields for card customization -->
+  <label>Color: <input type="text" id="color" placeholder="e.g., blue"></label><br>
+  <label>Type: <input type="text" id="type" placeholder="e.g., wizard"></label><br>
+  <label>Effect: <input type="text" id="effect" placeholder="e.g., casts illusions"></label><br>
+
+  <!-- Button to generate the card -->
+  <button onclick="createMagicCard()">Generate Card</button>
+
+  <!-- Card display -->
+  <div id="card-container"></div>
+
+  <script>
+    // Card Generator Logic
+    function generateCardText(color, type, effect) {
+      const adjectives = ['mystical', 'ancient', 'powerful', 'enigmatic', 'arcane'];
+      const verbs = ['controls', 'manipulates', 'unleashes', 'summons', 'conjures'];
+      const phrases = [
+        'with a touch of magic',
+        'from the depths of the unknown',
+        'that bends reality',
+        'with unparalleled might',
+        'that defies logic'
+      ];
+
+      const randomAdjective = adjectives[Math.floor(Math.random() * adjectives.length)];
+      const randomVerb = verbs[Math.floor(Math.random() * verbs.length)];
+      const randomPhrase = phrases[Math.floor(Math.random() * phrases.length)];
+
+      const name = `${color.charAt(0).toUpperCase() + color.slice(1)} ${type}`;
+      const text = `This ${randomAdjective} ${color} ${type} ${randomVerb} ${effect} ${randomPhrase}.`;
+      const flavorText = `A ${randomAdjective} ${color} force that ${randomVerb} ${randomPhrase}.`;
+
+      return { name, type, text, flavorText };
+    }
+
+    // Function to generate an image using OpenAI's DALL·E
+    async function generateCardImage(cardText) {
+
+      try {
+        const response = await fetch('/generate-card', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            model: 'dall-e-3',
+            prompt: 'woof',
+            n: 1,
+            size: '1024x1024'
+          })
+        });
+
+          console.log(response)
+        if (!response.ok) {
+          throw new Error('Image generation failed');
+        }
+
+        const data = await response.json();
+        return data.data[0].url; // Return the generated image URL
+
+      } catch (error) {
+        console.log(error)
+        console.error('Error generating image:', error);
+        return 'https://via.placeholder.com/1024?text=Image+Unavailable';
+      }
+    }
+
+    // Main function to create a card
+    async function createMagicCard() {
+      const color = document.getElementById('color').value || 'blue';
+      const type = document.getElementById('type').value || 'wizard';
+      const effect = document.getElementById('effect').value || 'casts illusions';
+
+      // Generate card text
+      const card = generateCardText(color, type, effect);
+
+      // Display placeholder while image loads
+      const cardContainer = document.getElementById('card-container');
+      cardContainer.innerHTML = `
+        <div class="card">
+          <div class="card-content">
+            <div class="card-name">${card.name}</div>
+            <div class="card-type">${card.type}</div>
+            <p>Generating image...</p>
+            <div class="card-text">${card.text}<br><em>${card.flavorText}</em></div>
+          </div>
+        </div>
+      `;
+
+      // Generate and display card image
+      const imageUrl = await generateCardImage(card);
+      cardContainer.innerHTML = `
+        <div class="card">
+          <img class="card-image" src="${imageUrl}" alt="${card.name}" />
+          <div class="card-content">
+            <div class="card-name">${card.name}</div>
+            <div class="card-type">${card.type}</div>
+            <div class="card-text">${card.text}<br><em>${card.flavorText}</em></div>
+          </div>
+        </div>
+      `;
+    }
+  </script>
+
+</body>
+
+</html>
