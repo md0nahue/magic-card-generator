@@ -36,7 +36,9 @@ async function generateMagicCardText(description) {
             "set": "string",
             "artist": "string"
           }
-          The response should strictly follow the JSON schema above.`
+          The response should strictly follow the JSON schema above.
+
+          IMPORTANT: the card should be a magic the gathering card matching this description: ${description}`
         }
       ],
       response_format: { type: "json_object" } // ✅ Correct value
@@ -53,11 +55,11 @@ async function generateMagicCardText(description) {
 /**
  * Generates an image for the Magic card using OpenAI DALL-E.
  */
-async function generateMagicCardImage() {
+async function generateMagicCardImage(description) {
   try {
     const response = await openai.images.generate({
       model: "dall-e-3",
-      prompt: "A fearsome wizard, fantasy trading card style",
+      prompt: "In a stunning fantasy art style, show me art which matches this description: " + description,
       n: 1,
       size: "1024x1024",
     });
@@ -120,7 +122,7 @@ async function generateAndSaveMagicCard(description) {
     const cardData = await generateMagicCardText(description);
     console.log(cardData)
     // Step 2: Generate card image
-    const imageUrl = await generateMagicCardImage();
+    const imageUrl = await generateMagicCardImage(description);
     console.log(imageUrl)
     // Step 3: Download image
     const outputDir = path.join(__dirname, './public');
